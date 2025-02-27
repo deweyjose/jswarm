@@ -12,6 +12,27 @@
         <module>examples</module>
     </modules>
 
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Dewey Jose</name>
+            <email>richard.e.jose@gmail.com</email>
+            <organization>dj</organization>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git@github.com:deweyjose/jswarm.git</connection>
+        <url>scm:git:git@github.com:deweyjose/jswarm.git</url>
+        <developerConnection>scm:git:git@github.com:deweyjose/jswarm.git</developerConnection>
+    </scm>
+
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <nexus-staging-maven-plugin.version>1.7.0</nexus-staging-maven-plugin.version>
@@ -130,6 +151,9 @@
                                 </goals>
                             </execution>
                         </executions>
+                        <configuration>
+                            <source>11</source>
+                        </configuration>
                     </plugin>
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
