@@ -36,10 +36,6 @@
             <groupId>org.slf4j</groupId>
         </dependency>
         <dependency>
-            <artifactId>logback-classic</artifactId>
-            <groupId>ch.qos.logback</groupId>
-        </dependency>
-        <dependency>
             <artifactId>reflections</artifactId>
             <groupId>org.reflections</groupId>
         </dependency>

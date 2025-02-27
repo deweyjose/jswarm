@@ -101,7 +101,7 @@ public class LLMAgentRegistry {
 
     registerGlobalFunction(agent.getDescription(), agentTransfer, agent);
 
-    log.info("Loaded Agent: {}", agent.getName());
+    log.debug("Loaded Agent: {}", agent.getName());
   }
 
   public void registerInstanceFunction(String description, Method method, LLMAgent agent) {
