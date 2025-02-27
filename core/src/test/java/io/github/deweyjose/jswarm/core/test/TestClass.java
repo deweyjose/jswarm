@@ -1,17 +1,14 @@
 package io.github.deweyjose.jswarm.core.test;
 
 import io.github.deweyjose.jswarm.core.annotations.LLMCoordinator;
-import io.github.deweyjose.jswarm.core.model.LLMAgent;
 import io.github.deweyjose.jswarm.core.model.LLMFunctionContext;
 import java.util.List;
 import java.util.Map;
 
-@LLMCoordinator
-public class TestClass extends LLMAgent {
-
-  public TestClass() {
-    super("gpt-4o-mini", "test instructions", "use me for test description");
-  }
+@LLMCoordinator(
+    description = "Use me for coordinating the conversation across various test agents.",
+    instructions = "Always be nice.")
+public class TestClass {
 
   public String methodWithContextParam(LLMFunctionContext context) {
     return "test";

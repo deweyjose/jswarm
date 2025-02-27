@@ -66,7 +66,7 @@ class LLMNexusTest {
 
     var functionName =
         functions.keySet().stream()
-            .filter(p -> p.endsWith("_TestHelloWorld_getAgent"))
+            .filter(p -> p.endsWith("_TestMemeGenerator_getAgent"))
             .findFirst()
             .orElseThrow(() -> new IllegalStateException("No function found"));
 
@@ -113,7 +113,7 @@ class LLMNexusTest {
 
     var functionName =
         functions.keySet().stream()
-            .filter(p -> p.endsWith("_TestHelloWorld_getAgent"))
+            .filter(p -> p.endsWith("_TestMemeGenerator_getAgent"))
             .findFirst()
             .orElseThrow(() -> new IllegalStateException("No function found"));
 

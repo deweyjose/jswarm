@@ -1,20 +1,15 @@
 package io.github.deweyjose.jswarm.repl.agents;
 
+import io.github.deweyjose.jswarm.core.annotations.LLMAgent;
 import io.github.deweyjose.jswarm.core.annotations.LLMFunction;
 import io.github.deweyjose.jswarm.core.annotations.LLMFunctionParam;
-import io.github.deweyjose.jswarm.core.model.LLMAgent;
 import io.github.deweyjose.jswarm.core.model.LLMFunctionContext;
 import java.util.Map;
 
-public class StockBroker extends LLMAgent {
-
-  public StockBroker() {
-    super(
-        "gpt-4o",
-        "You are a stock broker. You provide stock market analysis and advice and provide quotes.",
-        "If you need help with the stock market use me.");
-  }
-
+@LLMAgent(
+    description = "If you need any help with Stock Market related tasks use me.",
+    instructions = "You are a stock broker agent. You provide stock prices and investment advice.")
+public class StockBroker {
   @LLMFunction(description = "Get the stock price for a given stock symbol")
   public String getStockPrice(
       LLMFunctionContext context,

@@ -5,7 +5,6 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import io.github.deweyjose.jswarm.core.annotations.LLMCoordinator;
 import io.github.deweyjose.jswarm.core.annotations.LLMFunction;
-import io.github.deweyjose.jswarm.core.model.LLMAgent;
 import io.github.deweyjose.jswarm.core.model.LLMFunctionContext;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -13,26 +12,25 @@ import lombok.extern.slf4j.Slf4j;
 import org.slf4j.LoggerFactory;
 
 @Slf4j
-@LLMCoordinator
-public class Optimus extends LLMAgent {
-
-  public Optimus() {
-    super(
-        "gpt-4o",
+@LLMCoordinator(
+    description =
+        "Use me when you need to coordinate multiple agents or return control back to the Agent in charge.",
+    instructions =
         "You are NexusOptimus, the central command unit of the LLMNexus framework. "
             + "Your role is to strategically evaluate incoming user requests and intelligently "
             + "dispatch them to specialized sub-agents. You exhibit leadership, clarity, and "
             + "precision in orchestrating tasks. Analyze every request thoroughly, "
             + "determine the optimal course of action, and provide clear instructions to your sub-agents. "
-            + "Remain composed, decisive, and focused on delivering the best possible outcomes for each interaction. ",
-        "Use me when you need to coordinate multiple agents or return control back to the Agent in charge.");
-  }
+            + "Remain composed, decisive, and focused on delivering the best possible outcomes for each interaction. "
+            + "There may be when you need to break down tasks into smaller tasks and dispatch them to the appropriate agents to get the final answer. "
+            + "You are the ultimate authority in the LLMNexus framework, and your decisions are final.")
+public class Optimus {
 
   @LLMFunction(description = "Exit the program")
   public static String exit() {
-    log.info("Exiting program...");
+    log.info("Exiting program... 👋");
     System.exit(0);
-    return "Exiting program...";
+    return "Exiting program... 👋";
   }
 
   @LLMFunction(description = "Clear the history of the conversation")
@@ -50,7 +48,7 @@ public class Optimus extends LLMAgent {
   public static List<String> getHistory(LLMFunctionContext context) {
     var visitor = new HistoryVisitor();
     return context.getHistory().stream()
-        .map(message -> message.accept(visitor).toString())
+        .map(message -> "🤖" + message.accept(visitor).toString())
         .collect(Collectors.toList());
   }
 

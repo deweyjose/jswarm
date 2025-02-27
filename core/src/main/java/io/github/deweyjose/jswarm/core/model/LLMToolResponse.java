@@ -8,5 +8,5 @@ import lombok.Getter;
 @Getter
 public class LLMToolResponse {
   private final ChatCompletionMessage message;
-  private final LLMAgent agent;
+  private final LLMAgentWrapper agent;
 }

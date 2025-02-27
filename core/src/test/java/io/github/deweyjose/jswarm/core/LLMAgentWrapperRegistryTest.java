@@ -2,21 +2,22 @@ package io.github.deweyjose.jswarm.core;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import io.github.deweyjose.jswarm.core.model.LLMAgent;
+import io.github.deweyjose.jswarm.core.model.LLMAgentWrapper;
 import io.github.deweyjose.jswarm.core.test.TestClass;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 
 @Slf4j
-class LLMAgentRegistryTest {
+class LLMAgentWrapperRegistryTest {
 
   private LLMAgentRegistry llmAgentRegistry;
 
-  public LLMAgentRegistryTest() {
+  public LLMAgentWrapperRegistryTest() {
     System.setProperty("AGENT_PACKAGE", "io.github.deweyjose.jswarm.core.test");
     llmAgentRegistry = new LLMAgentRegistry();
   }
@@ -31,10 +32,12 @@ class LLMAgentRegistryTest {
 
   @Test
   void getCoordinatorAgent() {
-    LLMAgent testClass = llmAgentRegistry.getCoordinatorAgent();
+    LLMAgentWrapper testClass = llmAgentRegistry.getCoordinatorAgent();
     assertNotNull(testClass);
-    assertEquals("test instructions", testClass.getInstructions());
-    assertEquals("use me for test description", testClass.getDescription());
+    assertEquals("Always be nice.", testClass.getInstructions());
+    assertEquals(
+        "Use me for coordinating the conversation across various test agents.",
+        testClass.getDescription());
   }
 
   @Test
@@ -50,24 +53,23 @@ class LLMAgentRegistryTest {
 
     Collections.sort(descriptions);
 
-    assertEquals(List.of("use me for hello world", "use me for test description"), descriptions);
+    assertEquals(
+        List.of(
+            "Use me for coordinating the conversation across various test agents.",
+            "Use this when you need to do something with a meme."),
+        descriptions);
     log.info("Functions: {}", functions.keySet());
   }
 
   @Test
   @SneakyThrows
-  void getFunction() {
+  void getAgentFunction() {
     var functions = llmAgentRegistry.getFunctions(llmAgentRegistry.getCoordinatorAgent());
-    var functionName =
-        functions.keySet().stream()
-            .filter(f -> f.contains("TestClass_getAgent"))
-            .findFirst()
-            .orElseThrow();
 
-    var function =
-        llmAgentRegistry.getFunction(functionName, llmAgentRegistry.getCoordinatorAgent());
+    assertEquals(2, functions.size());
 
-    TestClass agent = (TestClass) function.getMethod().invoke(function.getInstance());
-    assertEquals("test", agent.methodWithStringParam("a"));
+    for (Map.Entry<String, LLMFunctionWrapper> entry : functions.entrySet()) {
+      assertTrue(entry.getKey().endsWith("_getAgent"));
+    }
   }
 }

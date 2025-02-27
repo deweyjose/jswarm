@@ -13,7 +13,7 @@ import com.openai.models.ChatCompletionSystemMessageParam;
 import com.openai.models.ChatCompletionTool;
 import com.openai.models.ChatCompletionToolMessageParam;
 import com.openai.models.ChatCompletionUserMessageParam;
-import io.github.deweyjose.jswarm.core.model.LLMAgent;
+import io.github.deweyjose.jswarm.core.model.LLMAgentWrapper;
 import io.github.deweyjose.jswarm.core.model.LLMFunctionContext;
 import io.github.deweyjose.jswarm.core.model.LLMResponse;
 import io.github.deweyjose.jswarm.core.model.LLMToolResponse;
@@ -52,7 +52,7 @@ public class LLMNexus {
 
   @SneakyThrows
   private ChatCompletion getChatCompletion(
-      LLMAgent agent, List<ChatCompletionMessageParam> history) {
+      LLMAgentWrapper agent, List<ChatCompletionMessageParam> history) {
 
     List<ChatCompletionMessageParam> messages = new ArrayList<>();
     messages.add(
@@ -98,7 +98,9 @@ public class LLMNexus {
 
   @SneakyThrows
   private LLMToolResponse handleToolCall(
-      ChatCompletionMessageToolCall toolCall, LLMAgent agent, LLMFunctionContext functionContext) {
+      ChatCompletionMessageToolCall toolCall,
+      LLMAgentWrapper agent,
+      LLMFunctionContext functionContext) {
     var function = toolCall.function();
     var functionName = function.name();
     var functionArgs = function.arguments();
@@ -138,12 +140,12 @@ public class LLMNexus {
                         .build()))
             .refusal(Optional.empty());
 
-    if (result instanceof LLMAgent) {
+    if (result instanceof LLMAgentWrapper) {
       completionMessageBuilder.content(
           String.format(
               "Transferred to agent %s. Adopt this persona immediately.",
-              ((LLMAgent) result).getName()));
-      responseBuilder.agent((LLMAgent) result);
+              ((LLMAgentWrapper) result).getName()));
+      responseBuilder.agent((LLMAgentWrapper) result);
     } else {
       completionMessageBuilder.content(result.toString());
     }
@@ -161,7 +163,7 @@ public class LLMNexus {
     ChatCompletionMessage message;
     boolean hasToolCalls;
     // we start off with the coordinator
-    LLMAgent agent = functionRegistry.getCoordinatorAgent();
+    LLMAgentWrapper agent = functionRegistry.getCoordinatorAgent();
 
     do {
       var completion = getChatCompletion(agent, history);

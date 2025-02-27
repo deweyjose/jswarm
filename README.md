@@ -2,8 +2,10 @@
 
 ## Overview
 
-JSWARM is a Java-based project that leverages OpenAI's API to create a chatbot with various functionalities. The project
-is structured using Maven and includes multiple modules such as `core` and `repl`.
+JSwarm is a Java-based library that supports simple agentic workflows. It provides an annotation-driven approach to
+define specialized "agents" and their functions, leveraging large language models to manage conversation flows. This
+modular design helps developers create flexible chatbots and coordinate different agents in a maintainable and
+extensible manner.
 
 ## Modules
 
@@ -140,7 +142,7 @@ package io.github.deweyjose.jswarm.repl.agents;
 
 import io.github.deweyjose.jswarm.core.annotations.LLMCoordinator;
 import io.github.deweyjose.jswarm.core.annotations.LLMFunction;
-import io.github.deweyjose.jswarm.core.model.LLMAgent;
+import io.github.deweyjose.jswarm.core.model.LLMAgentWrapper;
 import io.github.deweyjose.jswarm.core.model.LLMFunctionContext;
 import lombok.extern.slf4j.Slf4j;
 
@@ -179,7 +181,7 @@ package io.github.deweyjose.jswarm.repl.agents;
 
 import io.github.deweyjose.jswarm.core.annotations.LLMFunction;
 import io.github.deweyjose.jswarm.core.annotations.LLMFunctionParam;
-import io.github.deweyjose.jswarm.core.model.LLMAgent;
+import io.github.deweyjose.jswarm.core.model.LLMAgentWrapper;
 import io.github.deweyjose.jswarm.core.model.LLMFunctionContext;
 
 import java.util.Map;

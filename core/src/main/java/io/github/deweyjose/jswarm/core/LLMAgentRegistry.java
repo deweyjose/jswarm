@@ -4,9 +4,10 @@ import static io.github.deweyjose.jswarm.core.LLMFunctionWrapper.*;
 import static io.github.deweyjose.jswarm.core.LLMFunctionWrapper.computeFunctionParameters;
 
 import com.openai.models.FunctionDefinition;
+import io.github.deweyjose.jswarm.core.annotations.LLMAgent;
 import io.github.deweyjose.jswarm.core.annotations.LLMCoordinator;
 import io.github.deweyjose.jswarm.core.annotations.LLMFunction;
-import io.github.deweyjose.jswarm.core.model.LLMAgent;
+import io.github.deweyjose.jswarm.core.model.LLMAgentWrapper;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
@@ -21,7 +22,7 @@ public class LLMAgentRegistry {
       new HashMap<>();
   private Map<String, LLMFunctionWrapper> registeredGlobalFunctions = new HashMap<>();
 
-  private LLMAgent coordinatorAgent;
+  private LLMAgentWrapper coordinatorAgent;
 
   public LLMAgentRegistry() {
     this(System.getProperty("AGENT_PACKAGE", System.getenv().get("AGENT_PACKAGE")));
@@ -38,15 +39,14 @@ public class LLMAgentRegistry {
     return String.format("%s_%s_%s", hashCode, className, methodName);
   }
 
-  public LLMAgent getCoordinatorAgent() {
+  public LLMAgentWrapper getCoordinatorAgent() {
     return coordinatorAgent;
   }
 
   private void initialize(String agentPackage) {
     Reflections reflections = new Reflections(agentPackage);
-    Set<Class<? extends LLMAgent>> annotated =
-        reflections.getSubTypesOf(LLMAgent.class).stream()
-            .filter(p -> p.isAnnotationPresent(LLMCoordinator.class))
+    Set<Class<?>> annotated =
+        reflections.getTypesAnnotatedWith(LLMCoordinator.class).stream()
             .collect(Collectors.toSet());
 
     // make sure we have a coordinator agent
@@ -56,21 +56,36 @@ public class LLMAgentRegistry {
       throw new IllegalStateException("Multiple LLMCoordinator annotated classes found");
     } else {
       try {
-        coordinatorAgent = annotated.iterator().next().getDeclaredConstructor().newInstance();
+        Object instance = annotated.iterator().next().getDeclaredConstructor().newInstance();
+        LLMCoordinator annotation = instance.getClass().getAnnotation(LLMCoordinator.class);
+        coordinatorAgent =
+            LLMAgentWrapper.builder()
+                .agent(instance)
+                .model(annotation.model())
+                .description(annotation.description())
+                .instructions(annotation.instructions())
+                .build();
         registerAgent(coordinatorAgent);
       } catch (Exception e) {
         throw new IllegalStateException("Error instantiating coordinator agent", e);
       }
     }
 
-    // load all agents
-    reflections.getSubTypesOf(LLMAgent.class).stream()
-        .filter(p -> !p.isAnnotationPresent(LLMCoordinator.class))
+    reflections
+        .getTypesAnnotatedWith(LLMAgent.class)
         .forEach(
             clazz -> {
               try {
-                LLMAgent agent = clazz.getDeclaredConstructor().newInstance();
-                registerAgent(agent);
+                Object instance = clazz.getDeclaredConstructor().newInstance();
+                LLMAgent annotation = instance.getClass().getAnnotation(LLMAgent.class);
+                LLMAgentWrapper wrapper =
+                    LLMAgentWrapper.builder()
+                        .agent(instance)
+                        .model(annotation.model())
+                        .description(annotation.description())
+                        .instructions(annotation.instructions())
+                        .build();
+                registerAgent(wrapper);
               } catch (Exception e) {
                 log.error("Error Loading agent class: {}", clazz.getSimpleName(), e);
                 throw new RuntimeException(e);
@@ -78,36 +93,59 @@ public class LLMAgentRegistry {
             });
   }
 
-  private void registerAgent(LLMAgent agent) {
-    Method[] methods = agent.getClass().getDeclaredMethods();
+  private void registerAgent(LLMAgentWrapper wrapper) {
+    Method[] methods = wrapper.getAgent().getClass().getDeclaredMethods();
     for (Method method : methods) {
       LLMFunction methodAnnotation = method.getAnnotation(LLMFunction.class);
       if (methodAnnotation != null) {
         if (Modifier.isStatic(method.getModifiers())) {
-          registerGlobalFunction(methodAnnotation.description(), method, null);
-        } else if (methodAnnotation.global()) {
-          registerGlobalFunction(methodAnnotation.description(), method, agent);
+          registerGlobalFunction(
+              methodAnnotation.description(),
+              method,
+              null,
+              functionName(
+                  method.hashCode(), method.getDeclaringClass().getSimpleName(), method.getName()));
         } else {
-          registerInstanceFunction(methodAnnotation.description(), method, agent);
+          var name =
+              functionName(
+                  wrapper.getAgent().hashCode(),
+                  wrapper.getAgent().getClass().getSimpleName(),
+                  method.getName());
+          if (methodAnnotation.global()) {
+            registerGlobalFunction(
+                methodAnnotation.description(), method, wrapper.getAgent(), name);
+          } else {
+            registerInstanceFunction(
+                methodAnnotation.description(), method, wrapper.getAgent(), name);
+          }
         }
       }
     }
 
     Method agentTransfer =
-        Arrays.stream(agent.getClass().getSuperclass().getDeclaredMethods())
-            .filter(m -> m.getName().equals("getAgent"))
+        Arrays.stream(wrapper.getClass().getDeclaredMethods())
+            .filter(m -> m.getName().equals("getWrapper"))
             .findFirst()
-            .orElse(null);
+            .orElseThrow(
+                () ->
+                    new IllegalStateException(
+                        "No getAgent method found in agent class: "
+                            + wrapper.getClass().getSimpleName()));
 
-    registerGlobalFunction(agent.getDescription(), agentTransfer, agent);
+    registerGlobalFunction(
+        wrapper.getDescription(),
+        agentTransfer,
+        wrapper,
+        functionName(
+            wrapper.getAgent().hashCode(),
+            wrapper.getAgent().getClass().getSimpleName(),
+            "getAgent"));
 
-    log.debug("Loaded Agent: {}", agent.getName());
+    log.debug("Loaded Agent: {}", wrapper.getName());
   }
 
-  public void registerInstanceFunction(String description, Method method, LLMAgent agent) {
-    String name =
-        functionName(agent.hashCode(), agent.getClass().getSimpleName(), method.getName());
-
+  private void registerInstanceFunction(
+      String description, Method method, Object agent, String name) {
     log.debug("Registering instance LLMFunction {}", name);
 
     registeredInstanceFunctions
@@ -128,14 +166,8 @@ public class LLMAgentRegistry {
                 .build());
   }
 
-  public void registerGlobalFunction(String description, Method method, LLMAgent agent) {
-    // can be static ...
-    final String name =
-        agent == null
-            ? functionName(
-                method.hashCode(), method.getDeclaringClass().getSimpleName(), method.getName())
-            : functionName(agent.hashCode(), agent.getClass().getSimpleName(), method.getName());
-
+  private void registerGlobalFunction(
+      String description, Method method, Object agent, String name) {
     log.debug("Registering global LLMFunction {}", name);
 
     if (registeredGlobalFunctions.containsKey(name)) {
@@ -158,18 +190,19 @@ public class LLMAgentRegistry {
             .build());
   }
 
-  public Map<String, LLMFunctionWrapper> getFunctions(LLMAgent agent) {
+  public Map<String, LLMFunctionWrapper> getFunctions(LLMAgentWrapper wrapper) {
     Map<String, LLMFunctionWrapper> allFunctions = new HashMap<>(registeredGlobalFunctions);
-    if (registeredInstanceFunctions.containsKey(agent)) {
-      allFunctions.putAll(registeredInstanceFunctions.get(agent));
+    if (registeredInstanceFunctions.containsKey(wrapper.getAgent())) {
+      allFunctions.putAll(registeredInstanceFunctions.get(wrapper.getAgent()));
     }
     return Collections.unmodifiableMap(allFunctions);
   }
 
-  public LLMFunctionWrapper getFunction(String name, LLMAgent agent) {
+  public LLMFunctionWrapper getFunction(String name, LLMAgentWrapper wrapper) {
     LLMFunctionWrapper function = registeredGlobalFunctions.get(name);
     if (function == null) {
-      Map<String, LLMFunctionWrapper> functions = registeredInstanceFunctions.get(agent);
+      Map<String, LLMFunctionWrapper> functions =
+          registeredInstanceFunctions.get(wrapper.getAgent());
       if (functions != null) {
         function = functions.get(name);
       }

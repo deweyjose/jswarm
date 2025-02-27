@@ -1,20 +1,16 @@
 package io.github.deweyjose.jswarm.repl.agents;
 
+import io.github.deweyjose.jswarm.core.annotations.LLMAgent;
 import io.github.deweyjose.jswarm.core.annotations.LLMFunction;
 import io.github.deweyjose.jswarm.core.annotations.LLMFunctionParam;
-import io.github.deweyjose.jswarm.core.model.LLMAgent;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class WeatherMan extends LLMAgent {
-
-  public WeatherMan() {
-    super(
-        "gpt-4o",
-        "You are a weather assistant. You provide weather information for any city.",
-        "If you need help with the weather use me.");
-  }
+@LLMAgent(
+    description = "If you need help with the weather use me.",
+    instructions = "You are a weather assistant. You provide weather information for any city.")
+public class WeatherMan {
 
   @LLMFunction(description = "Get the weather for a given city")
   public String getWeather(
